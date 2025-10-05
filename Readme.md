@@ -1,7 +1,7 @@
 # 🧩 Flask Portfolio Records Application
 
 A simple **two-tier web application** built using **Flask** (frontend) and **MySQL** (backend database).
-This project is designed for **DevOps practice**, demonstrating containerization, environment-based configuration, and Docker networking.
+This project is created for **DevOps hands-on practice**, demonstrating **containerization**, **networking**, and **environment-based configuration** with Docker.
 
 ---
 
@@ -9,15 +9,15 @@ This project is designed for **DevOps practice**, demonstrating containerization
 
 The application allows users to:
 
-* Add their portfolio details (Name, Role, Skills, and Email)
-* Store those records in a MySQL database
-* View all submissions in a responsive HTML table
+* Add portfolio details (Name, Role, Skills, Email)
+* Store data in a MySQL database
+* View all entries in a responsive HTML table
 
-It’s lightweight and designed to teach:
+This project helps understand:
 
-* How applications communicate inside Docker networks
-* How environment variables are used for configuration
-* How to containerize and deploy simple web stacks
+* How containers communicate in Docker networks
+* How to use environment variables for app configuration
+* How to containerize and deploy multi-tier apps
 
 ---
 
@@ -31,7 +31,7 @@ It’s lightweight and designed to teach:
                      |  Connects to MySQL   |
                      +----------+-----------+
                                 |
-                                | Docker Bridge Network (app-tier)
+                                | Docker Bridge Network (adnan-isolated-network)
                                 |
                      +----------+-----------+
                      |     MySQL Database   |
@@ -44,12 +44,12 @@ It’s lightweight and designed to teach:
 
 ## ⚙️ Tech Stack
 
-| Component        | Technology                       |
-| ---------------- | -------------------------------- |
-| Frontend / API   | Flask (Python)                   |
-| Backend          | MySQL                            |
-| Language         | Python 3                         |
-| Containerization | Docker                           |
+| Component        | Technology                                     |
+| ---------------- | ---------------------------------------------- |
+| Frontend / API   | Flask (Python)                                 |
+| Backend          | MySQL 8                                        |
+| Language         | Python 3                                       |
+| Containerization | Docker                                         |
 | Networking       | User-defined bridge (`adnan-isolated-network`) |
 
 ---
@@ -65,6 +65,8 @@ flask-portfolio/
 ├── templates/
 │   ├── form.html          # Form page (Add portfolio)
 │   └── table.html         # Table view (View portfolios)
+├── init.sql               # MySQL table initialization
+├── docker-compose.yml     # Two-tier app setup (Flask + MySQL)
 └── README.md              # This file
 ```
 
@@ -72,8 +74,7 @@ flask-portfolio/
 
 ## 🔧 Configuration
 
-The Flask app reads **all configuration values from environment variables**.
-You must provide these variables when running the container, either individually with `-e` or through an `.env` file.
+The Flask app reads **all configuration values** from environment variables.
 
 | Variable      | Description                         | Default                               |
 | ------------- | ----------------------------------- | ------------------------------------- |
@@ -86,14 +87,14 @@ You must provide these variables when running the container, either individually
 | `PORT`        | Flask port inside container         | `5000`                                |
 | `DEBUG`       | Flask debug mode                    | `False`                               |
 
-Example `.env` file:
+### Example `.env` file
 
-```
+```bash
 SECRET_KEY=my-secret-key
 DB_HOST=db
-DB_USER=appuser
-DB_PASSWORD=app123
-DB_NAME=app_db
+DB_USER=adnan
+DB_PASSWORD=adnan
+DB_NAME=portfolio
 DB_PORT=3306
 PORT=5000
 DEBUG=False
@@ -101,7 +102,21 @@ DEBUG=False
 
 ---
 
-## 🐳 Running with Docker
+## 🐳 Running with Docker Compose
+
+Bring up both containers (MySQL + Flask) in one go:
+
+```bash
+docker compose up --build
+```
+
+Access the app at 👉 [http://localhost:8080](http://localhost:8080)
+
+---
+
+## 🧱 Running Manually (Without Compose)
+
+If you want to practice networking and linking manually:
 
 ### 1. Create a Docker network
 
@@ -109,34 +124,35 @@ DEBUG=False
 docker network create adnan-isolated-network
 ```
 
-### 2. Start MySQL
+### 2. Start the MySQL container
 
 ```bash
 docker run -d \
---name db \
---network adnan-isolated-network \
--e MYSQL_ROOT_PASSWORD=root \
--e MYSQL_DATABASE=portfolio \
--e MYSQL_USER=adnan \
--e MYSQL_PASSWORD=adnan \
-mysql:8
+  --name db \
+  --network adnan-isolated-network \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=portfolio \
+  -e MYSQL_USER=adnan \
+  -e MYSQL_PASSWORD=adnan \
+  mysql:8
 ```
 
-### 3. Initialize the table
+### 3. Initialize the MySQL table
 
 ```bash
-docker exec -i db mysql -uadnan -padnan portfolio -e "CREATE TABLE IF NOT EXISTS portfolio (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), role VARCHAR(100), skills TEXT, email VARCHAR(100));"
+docker exec -i db mysql -uadnan -padnan portfolio -e \
+"CREATE TABLE IF NOT EXISTS portfolio (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), role VARCHAR(100), skills TEXT, email VARCHAR(100));"
 ```
 
-### 4. Build the Flask image
+### 4. Build the Flask app image
 
 ```bash
 docker build -t flask-portfolio-two-tier .
 ```
 
-### 5. Run the Flask app container
+### 5. Run the Flask container
 
-**Option A: Using an `.env` file (recommended)**
+**Option A: Using `.env` file**
 
 ```bash
 docker run -d \
@@ -147,7 +163,7 @@ docker run -d \
   flask-portfolio-two-tier
 ```
 
-**Option B: Passing environment variables directly**
+**Option B: Without `.env` file (pass variables directly)**
 
 ```bash
 docker run -d \
@@ -160,62 +176,38 @@ docker run -d \
   -e SECRET_KEY=adnan123 \
   -e DEBUG=False \
   -p 8080:5000 \
-  adnannabi/flask-portfolio-two-tier
-```
-
-### 6. Access the application
-
-Visit:
-👉 [http://localhost:8080](http://localhost:8080)
-
----
-
-## 📦 Local Requirements (if running without Docker)
-
-```
-flask==3.0.3
-mysql-connector-python==9.0.0
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run locally:
-
-```bash
-python app.py
+  flask-portfolio-two-tier
 ```
 
 ---
 
 ## 💡 Features
 
-* Responsive HTML interface (form + table)
-* Flash message alerts for success and error feedback
-* Environment-based configuration (no hardcoded values)
-* Clean Docker setup (small image, no unnecessary layers)
-* Works out of the box with MySQL 8
+* Responsive HTML (form + table)
+* Flash messages for success/error
+* Environment-based configuration
+* Health checks for both Flask and MySQL
+* Persistent MySQL storage (via volumes)
+* Lightweight image using `python:3.12-slim`
 
 ---
 
 ## 🧠 DevOps Concepts Demonstrated
 
-| Concept                      | Description                                              |
-| ---------------------------- | -------------------------------------------------------- |
-| **Containerization**         | Flask and MySQL run as isolated containers               |
-| **Networking**               | Uses Docker user-defined bridge network(`adnan-isolated`)|
-| **Configuration Management** | Fully driven by environment variables                    |
-| **Port Mapping**             | Host port 8080 → Container port 5000                     |
-| **Image Optimization**       | `python:slim` base, `--no-cache-dir` pip install         |
-| **Security Practice**        | Secret key and DB creds passed via environment variables |
+| Concept                | Description                                     |
+| ---------------------- | ----------------------------------------------- |
+| **Containerization**   | Flask and MySQL run in isolated containers      |
+| **Networking**         | Custom bridge network for service communication |
+| **Configuration**      | Managed via environment variables               |
+| **Health Checks**      | Ensure MySQL is ready before Flask starts       |
+| **Volumes**            | Data persistence across container restarts      |
+| **Image Optimization** | Uses slim image, minimal layers                 |
+| **Restart Policy**     | Services auto-restart if stopped unexpectedly   |
 
 ---
 
 ## ✨ Author
 
 **Adnan**
-*Network Engineer | Aspiring DevOps Engineer*
-Building strong foundations in Docker, Kubernetes, CI/CD, and Cloud — one hands-on project at a time.
+*Network Engineer → Aspiring DevOps Engineer*
+Building strong foundations in **Docker, Kubernetes, CI/CD, and Cloud** — one hands-on project at a time.

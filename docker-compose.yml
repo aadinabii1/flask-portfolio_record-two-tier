@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: "portfolio"
+      MYSQL_USER: "adnan"
+      MYSQL_PASSWORD: "adnan"
+    volumes:
+      - data_mysql:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      -  adnan-isolated-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin","ping","-h","localhost","-uroot","-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+  flask:
+    build: 
+      context: .
+    image: adnannabi/flask-portfolio-two-tier
+    container_name: app
+    environment:
+      DB_HOST: "db"
+      DB_USER: "adnan"
+      DB_PASSWORD: "adnan"
+      DB_NAME: "portfolio"
+      SECRET_KEY: "adnan123"
+      DEBUG: "False"
+    ports:
+      - "8081:5000"
+    networks:
+      - adnan-isolated-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+volumes:
+  data_mysql:
+networks:
+  adnan-isolated-network:
